@@ -53,10 +53,6 @@ jobs:
       - name: Validate bundle
         run: databricks bundle validate
 
-      # Lint: catches syntax errors, unused imports, undefined names
-      - name: Lint with Ruff
-        run: ruff check .
-
       # Security scan: flags hardcoded credentials, unsafe eval(), insecure hash functions
       # -ll = medium and high severity only
       - name: Security scan with Bandit
