@@ -1,0 +1,32 @@
+resources:
+  jobs:
+    wine_quality_ml_pipeline:
+      name: wine-quality-ml-pipeline
+      email_notifications:
+        on_failure:
+          - <your-email>
+
+      tasks:
+        - task_key: train_task
+          notebook_task:
+            notebook_path: ../src/train.py
+
+        - task_key: evaluate_task
+          notebook_task:
+            notebook_path: ../src/evaluate.py
+          depends_on:
+            - task_key: train_task
+
+        - task_key: batch_inference_task
+          notebook_task:
+            notebook_path: ../src/batch_inference.py
+          depends_on:
+            - task_key: evaluate_task
+
+      parameters:
+        - name: catalog_name
+          default: ${var.catalog_name}
+        - name: schema_name
+          default: ${var.schema_name}
+        - name: model_name
+          default: ${var.catalog_name}.${var.schema_name}.wine_classifier

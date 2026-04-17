@@ -1,0 +1,119 @@
+name: Deploy
+
+# Runs when a feature branch is merged into main.
+# Deploys the bundle across all three environments in sequence.
+# Each environment is gated by GitHub Environment protection rules —
+# staging and prod require manual approval before the deploy job runs.
+#
+# The MLOps pipeline (training, evaluation, inference, monitoring) is defined
+# as tasks inside the Databricks Job in the bundle. CD deploys the job definition;
+# the jobs run on their configured schedule or on explicit trigger.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false  
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    environment: dev  # Auto-deploys — no approval gate
+
+    # Required for Databricks GitHub OIDC — GitHub issues an OIDC token that the
+    # Databricks CLI exchanges for a short-lived access token automatically.
+    # No client secret is stored or needed.
+
+
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@v0
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy bundle to dev
+        run: databricks bundle deploy --target dev
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: deploy-dev  # Only runs if dev deploy succeeds
+    runs-on: ubuntu-latest
+    environment: staging  # Requires manual approval if configured
+
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@v0
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy bundle to staging
+        run: databricks bundle deploy --target staging
+
+  deploy-prod:
+    name: Deploy to Production
+    needs: deploy-staging  # Only runs if staging deploy succeeds
+    runs-on: ubuntu-latest
+    environment: prod  # Requires manual approval
+
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@v0
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy bundle to prod
+        run: databricks bundle deploy --target prod

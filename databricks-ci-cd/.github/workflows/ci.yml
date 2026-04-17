@@ -1,0 +1,68 @@
+name: Validate and Test
+
+# Runs on every PR targeting main from a feature branch.
+# Validates the bundle structure and runs unit tests — no deployment.
+# Goal: developer feedback in under 3 minutes.
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group:  ${{ github.workflow }}
+  cancel-in-progress: false 
+
+permissions:
+  id-token: write
+  contents: read
+
+
+jobs:
+  validate-and-test:
+    name: Validate & Test
+    runs-on: ubuntu-latest
+    environment: dev
+
+    # Required for Databricks GitHub OIDC — GitHub issues an OIDC token that the
+    # Databricks CLI exchanges for a short-lived access token automatically.
+    # No client secret is stored or needed.
+
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@v0
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Validate: resolves all variable substitutions and verifies notebook paths exist.
+      # Catches bundle misconfiguration before anything is deployed.
+      - name: Validate bundle
+        run: databricks bundle validate
+
+      # Lint: catches syntax errors, unused imports, undefined names
+      - name: Lint with Ruff
+        run: ruff check .
+
+      # Security scan: flags hardcoded credentials, unsafe eval(), insecure hash functions
+      # -ll = medium and high severity only
+      - name: Security scan with Bandit
+        run: bandit -r src/ -ll
+
+      # Unit tests: test training, evaluate, and inference functions
+      # with small synthetic DataFrames and mocked MLflow — no cluster required
+      - name: Run unit tests
+        run: pytest
