@@ -5,7 +5,7 @@ name: Validate and Test
 # Goal: developer feedback in under 3 minutes.
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
   group:  ${{ github.workflow }}
