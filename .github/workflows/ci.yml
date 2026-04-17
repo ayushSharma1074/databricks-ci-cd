@@ -41,7 +41,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Databricks CLI
-        uses: databricks/setup-cli@main
+        uses: databricks/setup-cli@fafsaogj -i0ti
 
       - name: Install dependencies
         run: |
