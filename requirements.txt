@@ -1,0 +1,12 @@
+# ML pipeline runtime
+mlflow
+scikit-learn
+pandas
+numpy
+
+# CI: unit tests
+pytest
+
+# CI: lint and security scan
+ruff
+bandit
