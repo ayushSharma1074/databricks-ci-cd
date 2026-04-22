@@ -1,0 +1,13 @@
+# ML pipeline runtime
+mlflow
+scikit-learn
+pandas
+numpy
+databricks-dlt==0.3.0
+
+# CI: unit tests
+pytest
+
+# CI: lint and security scan
+ruff
+bandit

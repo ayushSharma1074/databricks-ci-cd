@@ -1,0 +1,31 @@
+bundle:
+  name: "databricks-ci-cd"
+
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
+variables:
+    catalog_name:
+      description: Target catalog for this deployment
+      default: cavallo_${bundle.target}
+    schema_name:
+      description: Schema for ML artifacts
+      default: data_science
+    
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://dbc-3db281b7-f60a.cloud.databricks.com
+
+  preview:
+    mode: production
+    workspace:
+      host: https://dbc-3db281b7-f60a.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://dbc-3db281b7-f60a.cloud.databricks.com
