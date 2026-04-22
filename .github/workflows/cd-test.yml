@@ -9,10 +9,10 @@ name: Test Deployment Workflow
 # as tasks inside the Databricks Job in the bundle. CD deploys the job definition;
 # the jobs run on their configured schedule or on explicit trigger.
 on:
-  # push:
-  #   branches:
-  #     - 'release/**'
-  workflow_dispatch:
+  push:
+    branches:
+      - test
+
 
 concurrency:
   group: ${{ github.workflow }}
