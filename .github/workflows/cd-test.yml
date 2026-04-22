@@ -56,4 +56,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Deploy bundle to dev
-        run: databricks bundle deploy --target test
+        run: databricks bundle deploy --target preview
