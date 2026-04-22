@@ -1,0 +1,59 @@
+name: Prod Deployment Workflow
+
+# Runs when a feature branch is merged into main.
+# Deploys the bundle across all three environments in sequence.
+# Each environment is gated by GitHub Environment protection rules —
+# staging and prod require manual approval before the deploy job runs.
+#
+# The MLOps pipeline (training, evaluation, inference, monitoring) is defined
+# as tasks inside the Databricks Job in the bundle. CD deploys the job definition;
+# the jobs run on their configured schedule or on explicit trigger.
+on:
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false  
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: prod  # Auto-deploys — no approval gate
+
+    # Required for Databricks GitHub OIDC — GitHub issues an OIDC token that the
+    # Databricks CLI exchanges for a short-lived access token automatically.
+    # No client secret is stored or needed.
+
+
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy bundle to dev
+        run: databricks bundle deploy --target prod
